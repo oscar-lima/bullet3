@@ -25,6 +25,11 @@
 #include "../CommonInterfaces/CommonDeformableBodyBase.h"
 #include "../Utils/b3ResourcePath.h"
 
+// ROS stuff
+#include "ros/ros.h"
+#include "std_msgs/String.h"
+#include <sstream>
+
 ///The Pinch shows the frictional contact between kinematic rigid objects with deformable objects
 
 struct TetraCube
@@ -38,6 +43,12 @@ public:
 	Pinch(struct GUIHelperInterface* helper)
 		: CommonDeformableBodyBase(helper)
 	{
+        int argc;
+        char** argv;
+        ros::init(argc, argv, "pinch_node");
+
+        ros::NodeHandle n;
+        chatter_pub_ = n.advertise<std_msgs::String>("test_msg", 1000);
 	}
 	virtual ~Pinch()
 	{
@@ -54,14 +65,14 @@ public:
         float targetPos[3] = {0, -0, 0};
 		m_guiHelper->resetCamera(dist, yaw, pitch, targetPos[0], targetPos[1], targetPos[2]);
 	}
-    
+
     void stepSimulation(float deltaTime)
     {
         //use a smaller internal timestep, there are stability issues
         float internalTimeStep = 1. / 240.f;
         m_dynamicsWorld->stepSimulation(deltaTime, 4, internalTimeStep);
     }
-    
+
     void createGrip()
     {
         int count = 2;
@@ -78,13 +89,21 @@ public:
             startTransform.setRotation(btQuaternion(btVector3(1, 0, 0), SIMD_PI * 0.));
             createRigidBody(mass, startTransform, shape[i % nshapes]);
         }
+
+        // test publishing
+        std_msgs::String msg;
+        std::stringstream ss;
+        ss << "Hello, I am Pinch";
+        msg.data = ss.str();
+        ROS_INFO("%s", msg.data.c_str());
+        chatter_pub_.publish(msg);
     }
-    
+
     virtual void renderScene()
     {
         CommonDeformableBodyBase::renderScene();
         btDeformableMultiBodyDynamicsWorld* deformableWorld = getDeformableDynamicsWorld();
-        
+
         for (int i = 0; i < deformableWorld->getSoftBodyArray().size(); i++)
         {
             btSoftBody* psb = (btSoftBody*)deformableWorld->getSoftBodyArray()[i];
@@ -94,6 +113,8 @@ public:
             }
         }
     }
+private:
+    ros::Publisher chatter_pub_;
 };
 
 void dynamics(btScalar time, btDeformableMultiBodyDynamicsWorld* world)
@@ -111,7 +132,7 @@ void dynamics(btScalar time, btDeformableMultiBodyDynamicsWorld* world)
     rbTransform.setIdentity();
     btVector3 translation;
     btVector3 velocity;
-    
+
     btVector3 initialTranslationLeft = btVector3(0.5,3,4);
     btVector3 initialTranslationRight = btVector3(0.5,3,-4);
     btVector3 pinchVelocityLeft = btVector3(0,0,-2);
@@ -121,7 +142,7 @@ void dynamics(btScalar time, btDeformableMultiBodyDynamicsWorld* world)
     btVector3 holdVelocity = btVector3(0,0,0);
     btVector3 openVelocityLeft = btVector3(0,0,4);
     btVector3 openVelocityRight = btVector3(0,0,-4);
-    
+
     if (time < pressTime)
     {
         velocity = pinchVelocityLeft;
@@ -131,7 +152,7 @@ void dynamics(btScalar time, btDeformableMultiBodyDynamicsWorld* world)
     {
         velocity = liftVelocity;
         translation = initialTranslationLeft + pinchVelocityLeft * pressTime + liftVelocity * (time - pressTime);
-        
+
     }
     else if (time < shiftTime)
     {
@@ -158,7 +179,7 @@ void dynamics(btScalar time, btDeformableMultiBodyDynamicsWorld* world)
     rb0->setCenterOfMassTransform(rbTransform);
     rb0->setAngularVelocity(btVector3(0,0,0));
     rb0->setLinearVelocity(velocity);
-    
+
     btRigidBody* rb1 = rbs[1];
     if (time < pressTime)
     {
@@ -169,7 +190,7 @@ void dynamics(btScalar time, btDeformableMultiBodyDynamicsWorld* world)
     {
         velocity = liftVelocity;
         translation = initialTranslationRight + pinchVelocityRight * pressTime + liftVelocity * (time - pressTime);
-        
+
     }
     else if (time < shiftTime)
     {
@@ -196,7 +217,7 @@ void dynamics(btScalar time, btDeformableMultiBodyDynamicsWorld* world)
     rb1->setCenterOfMassTransform(rbTransform);
     rb1->setAngularVelocity(btVector3(0,0,0));
     rb1->setLinearVelocity(velocity);
-    
+
     rb0->setFriction(20);
     rb1->setFriction(20);
 }
@@ -253,7 +274,7 @@ void Pinch::initPhysics()
         //add the ground to the dynamics world
         m_dynamicsWorld->addRigidBody(body);
     }
-    
+
     // create a soft block
     {
         btScalar verts[24] = {0.f, 0.f, 0.f,
@@ -293,7 +314,7 @@ void Pinch::initPhysics()
                                                                   0,
                                                                   TetraCube::getNodes(),
                                                                   false, true, true);
-        
+
         psb->scale(btVector3(2, 2, 2));
         psb->translate(btVector3(0, 4, 0));
         psb->getCollisionShape()->setMargin(0.01);
@@ -305,11 +326,11 @@ void Pinch::initPhysics()
         psb->m_cfg.collisions |= btSoftBody::fCollision::SDF_RDF;
         getDeformableDynamicsWorld()->addSoftBody(psb);
         btSoftBodyHelpers::generateBoundaryFaces(psb);
-        
+
         btDeformableGravityForce* gravity_force =  new btDeformableGravityForce(gravity);
         getDeformableDynamicsWorld()->addForce(psb, gravity_force);
         m_forces.push_back(gravity_force);
-        
+
         btDeformableNeoHookeanForce* neohookean = new btDeformableNeoHookeanForce(8,3, 0.02);
         neohookean->setPoissonRatio(0.3);
         neohookean->setYoungsModulus(25);

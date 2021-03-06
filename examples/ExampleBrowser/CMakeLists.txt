@@ -66,7 +66,7 @@ IF (BUILD_SHARED_LIBS)
                  TARGET_LINK_LIBRARIES(
                                 BulletExampleBrowserLib Bullet3Common BulletSoftBody BulletDynamics BulletCollision BulletInverseDynamicsUtils
                                 BulletInverseDynamics LinearMath OpenGLWindow gwen BussIK
-                                ${CMAKE_THREAD_LIBS_INIT} ${DL}
+                                ${CMAKE_THREAD_LIBS_INIT} ${DL} ${catkin_LIBRARIES}
                         )
         ENDIF(APPLE)
 	ENDIF(WIN32)
@@ -86,8 +86,9 @@ INSTALL(TARGETS BulletExampleBrowserLib
 INCLUDE_DIRECTORIES(
         .
         ${BULLET_PHYSICS_SOURCE_DIR}/src
-	${BULLET_PHYSICS_SOURCE_DIR}/examples/SharedMemory
+        ${BULLET_PHYSICS_SOURCE_DIR}/examples/SharedMemory
         ${BULLET_PHYSICS_SOURCE_DIR}/examples/ThirdPartyLibs
+        ${catkin_INCLUDE_DIRS}
 )
 
 
@@ -407,8 +408,6 @@ SET(BulletExampleBrowser_SRCS
 	InProcessExampleBrowser.cpp
 	${BULLET_PHYSICS_SOURCE_DIR}/build3/bullet.rc
 )
-
-
 
 ADD_EXECUTABLE(App_ExampleBrowser
 		main.cpp
