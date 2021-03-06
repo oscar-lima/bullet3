@@ -1,4 +1,5 @@
-cmake_minimum_required(VERSION 2.4.3)
+cmake_minimum_required(VERSION 3.0.2)
+
 set(CMAKE_ALLOW_LOOSE_LOOP_CONSTRUCTS true)
 cmake_policy(SET CMP0017 NEW)
 #this line has to appear before 'PROJECT' in order to be able to disable incremental linking
@@ -6,6 +7,12 @@ SET(MSVC_INCREMENTAL_DEFAULT ON)
 
 PROJECT(BULLET_PHYSICS)
 FILE (STRINGS "VERSION" BULLET_VERSION)
+
+add_compile_options(-std=c++11)
+find_package(catkin REQUIRED COMPONENTS
+  roscpp
+)
+catkin_package()
 
 IF(COMMAND cmake_policy)
    cmake_policy(SET CMP0003 NEW)
@@ -482,12 +489,12 @@ IF(INSTALL_LIBS)
 ENDIF()
 
 
-OPTION(BUILD_UNIT_TESTS "Build Unit Tests"	ON)
-
-IF (BUILD_UNIT_TESTS)
-	ENABLE_TESTING()
-	SUBDIRS(test)
-ENDIF()
+# OPTION(BUILD_UNIT_TESTS "Build Unit Tests"	ON)
+#
+# IF (BUILD_UNIT_TESTS)
+# 	ENABLE_TESTING()
+# 	SUBDIRS(test)
+# ENDIF()
 
 set (BULLET_CONFIG_CMAKE_PATH lib${LIB_SUFFIX}/cmake/bullet )
 list (APPEND BULLET_DEFINITIONS ${BULLET_DOUBLE_DEF})
