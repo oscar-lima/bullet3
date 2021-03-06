@@ -66,7 +66,7 @@ IF (BUILD_SHARED_LIBS)
                  TARGET_LINK_LIBRARIES(
                                 BulletExampleBrowserLib Bullet3Common BulletSoftBody BulletDynamics BulletCollision BulletInverseDynamicsUtils
                                 BulletInverseDynamics LinearMath OpenGLWindow gwen BussIK
-                                ${CMAKE_THREAD_LIBS_INIT} ${DL} ${catkin_LIBRARIES}
+                                ${CMAKE_THREAD_LIBS_INIT} ${DL} # ${catkin_LIBRARIES}
                         )
         ENDIF(APPLE)
 	ENDIF(WIN32)

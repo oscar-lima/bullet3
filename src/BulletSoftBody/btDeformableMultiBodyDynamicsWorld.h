@@ -24,6 +24,10 @@
 #include "btSoftBodyHelpers.h"
 #include "BulletCollision/CollisionDispatch/btSimulationIslandManager.h"
 #include <functional>
+
+#include <ros/ros.h>
+#include <geometry_msgs/PoseStamped.h>
+
 typedef btAlignedObjectArray<btSoftBody*> btSoftBodyArray;
 
 class btDeformableBodySolver;
@@ -69,6 +73,8 @@ protected:
 	void clearGravity();
 
 public:
+    ros::Publisher left_finger_pose_pub_, right_finger_pose_pub_;
+
 	btDeformableMultiBodyDynamicsWorld(btDispatcher* dispatcher, btBroadphaseInterface* pairCache, btDeformableMultiBodyConstraintSolver* constraintSolver, btCollisionConfiguration* collisionConfiguration, btDeformableBodySolver* deformableBodySolver = 0);
 
 	virtual int stepSimulation(btScalar timeStep, int maxSubSteps = 1, btScalar fixedTimeStep = btScalar(1.) / btScalar(60.));
@@ -77,6 +83,12 @@ public:
 
 	void setSolverCallback(btSolverCallback cb)
 	{
+        int argc;
+        char** argv;
+        ros::init(argc, argv, "bullet_simulation");
+        ros::NodeHandle n;
+        left_finger_pose_pub_ = n.advertise<geometry_msgs::PoseStamped>("left_finger_pose", 1);
+        right_finger_pose_pub_ = n.advertise<geometry_msgs::PoseStamped>("right_finger_pose", 1);
 		m_solverCallback = cb;
 	}
 

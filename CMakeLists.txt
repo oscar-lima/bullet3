@@ -11,6 +11,7 @@ FILE (STRINGS "VERSION" BULLET_VERSION)
 add_compile_options(-std=c++11)
 find_package(catkin REQUIRED COMPONENTS
   roscpp
+  geometry_msgs
 )
 catkin_package()
 

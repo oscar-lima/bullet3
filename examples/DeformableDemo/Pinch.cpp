@@ -21,14 +21,10 @@
 #include "BulletSoftBody/btSoftBodyRigidBodyCollisionConfiguration.h"
 #include "BulletDynamics/Featherstone/btMultiBodyConstraintSolver.h"
 #include <stdio.h>  //printf debugging
-
 #include "../CommonInterfaces/CommonDeformableBodyBase.h"
 #include "../Utils/b3ResourcePath.h"
 
-// ROS stuff
-#include "ros/ros.h"
-#include "std_msgs/String.h"
-#include <sstream>
+#include "geometry_msgs/PoseStamped.h"
 
 ///The Pinch shows the frictional contact between kinematic rigid objects with deformable objects
 
@@ -42,17 +38,11 @@ class Pinch : public CommonDeformableBodyBase
 public:
 	Pinch(struct GUIHelperInterface* helper)
 		: CommonDeformableBodyBase(helper)
-	{
-        int argc;
-        char** argv;
-        ros::init(argc, argv, "pinch_node");
+	{}
 
-        ros::NodeHandle n;
-        chatter_pub_ = n.advertise<std_msgs::String>("test_msg", 1000);
-	}
 	virtual ~Pinch()
-	{
-	}
+	{}
+
 	void initPhysics();
 
 	void exitPhysics();
@@ -89,14 +79,6 @@ public:
             startTransform.setRotation(btQuaternion(btVector3(1, 0, 0), SIMD_PI * 0.));
             createRigidBody(mass, startTransform, shape[i % nshapes]);
         }
-
-        // test publishing
-        std_msgs::String msg;
-        std::stringstream ss;
-        ss << "Hello, I am Pinch";
-        msg.data = ss.str();
-        ROS_INFO("%s", msg.data.c_str());
-        chatter_pub_.publish(msg);
     }
 
     virtual void renderScene()
@@ -113,8 +95,6 @@ public:
             }
         }
     }
-private:
-    ros::Publisher chatter_pub_;
 };
 
 void dynamics(btScalar time, btDeformableMultiBodyDynamicsWorld* world)
@@ -180,6 +160,19 @@ void dynamics(btScalar time, btDeformableMultiBodyDynamicsWorld* world)
     rb0->setAngularVelocity(btVector3(0,0,0));
     rb0->setLinearVelocity(velocity);
 
+    // left finger
+    geometry_msgs::PoseStamped pose_msg;
+    pose_msg.header.frame_id = "world";
+    // axis are different in ros...
+    pose_msg.pose.position.x = -translation.x();
+    pose_msg.pose.position.y = translation.z();
+    pose_msg.pose.position.z = translation.y();
+    pose_msg.pose.orientation.x = 0.0;
+    pose_msg.pose.orientation.y = 0.0;
+    pose_msg.pose.orientation.z = 0.0;
+    pose_msg.pose.orientation.w = 1.0;
+    world->left_finger_pose_pub_.publish(pose_msg);
+
     btRigidBody* rb1 = rbs[1];
     if (time < pressTime)
     {
@@ -220,6 +213,13 @@ void dynamics(btScalar time, btDeformableMultiBodyDynamicsWorld* world)
 
     rb0->setFriction(20);
     rb1->setFriction(20);
+
+    // right finger
+    // axis are different in ros...
+    pose_msg.pose.position.x = -translation.x();
+    pose_msg.pose.position.y = translation.z();
+    pose_msg.pose.position.z = translation.y();
+    world->right_finger_pose_pub_.publish(pose_msg);
 }
 
 void Pinch::initPhysics()
